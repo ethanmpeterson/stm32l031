@@ -64,5 +64,13 @@ $(BUILD_DIR)/%.o: %.s
 clean:
 	rm build/*
 
-stlink: $(BUILD_DIR)/firmware.elf
+stlink: $(BUILD_DIR)/firmware.bin
 	@st-flash write $(BUILD_DIR)/fw.bin 0x8000000
+
+gdb:
+	@st-util
+
+debug: $(BUILD_DIR)/firmware.elf
+	@gdb \
+		--symbols=$(BUILD_DIR)/firmware.elf \
+		-ex 'target extended-remote localhost:4242'

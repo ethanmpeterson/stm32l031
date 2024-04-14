@@ -1,31 +1,56 @@
 #include "stm32l031xx.h"
 #include "stm32l0xx.h"
+#include "system_stm32l0xx.h"
+
+/* #define SET_BIT_U32(value, bit_idx) ((uint32_t)value | (uint32_t)(1 << bit_idx)) */
+/* #define CLEAR_BIT_U32(value, bit_idx) ((uint32_t)value & (uint32_t)(~(1 << bit_idx))) */
 
 int main (void) {
-  SystemCoreClockUpdate();
+  /* SystemCoreClockUpdate(); */
 
   // Clock configuration and setup
   PWR->CR |= (1 << 8);
 
-  // Enable HSI
-  RCC->CR |= (1 << RCC_CR_HSION_Pos);
-  RCC->CR |= (1 << RCC_CR_PLLON_Pos);
+  // Enable HSI, PLL and set prescalers
+  RCC->CR |= RCC_CR_HSION;
 
-  // Next setup downstream peripheral clocks
-  /* RCC->CFGR |= RCC_CFGR_PLLMUL */
-  RCC->CFGR |= 1;
+  // Set the PLL prescaling before enabling the PLL
+  RCC->CFGR |= RCC_CFGR_PLLMUL4;
+  RCC->CFGR |= RCC_CFGR_PLLDIV2;
+  RCC->CFGR |= RCC_CFGR_PLLSRC_HSI;
+  // Enable the PLL
+  RCC->CR |= RCC_CR_PLLON;
 
+  // Set up the APB and AHB prescalers. The init values already divide by 1 but
+  // in the spirit of being explicit
+  RCC->CFGR |= RCC_CFGR_PPRE2_DIV1;
+  RCC->CFGR |= RCC_CFGR_PPRE1_DIV1;
+  RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
+
+  // Wait for the PLL to be locked and then select it as the system clock
+  while (!(RCC->CR & RCC_CR_PLLRDY));
+
+  // Wait for flash to be ready
+  FLASH->ACR |= FLASH_ACR_LATENCY;
+  while ((FLASH->ACR & FLASH_ACR_LATENCY) == 0);
+
+  // Enable the PLL as system input clock
+  RCC->CFGR |= RCC_CFGR_SW_PLL;
+
+  // READ SWS field to ensure everything is brought up before running another clock update
+  while ((RCC->CFGR & RCC_CFGR_SWS_PLL) == 0);
+
+  SystemCoreClockUpdate();
   volatile uint32_t bro = 0;
   // Enable the GPIO clock
-  RCC->IOPENR |= (1 << RCC_IOPENR_IOPBEN_Pos);
+  RCC->IOPENR |= RCC_IOPENR_IOPBEN;
+
   // Inits to all 1s clear it so that all pins are input
   GPIOB->MODER = 0U;
 
   // Set PB3 to output
-  // NOTE: needs lots of clean up
+  // NOTE: needs lots of clean up. Don't want to hard code the mode register
   GPIOB->MODER |= (1 << 6);
-  uint32_t odr_init_value = GPIOB->ODR;
-
   for (;;) {
     if (bro == 1000000) {
       bro = 0;
