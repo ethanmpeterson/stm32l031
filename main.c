@@ -5,6 +5,8 @@
 /* #define SET_BIT_U32(value, bit_idx) ((uint32_t)value | (uint32_t)(1 << bit_idx)) */
 /* #define CLEAR_BIT_U32(value, bit_idx) ((uint32_t)value & (uint32_t)(~(1 << bit_idx))) */
 
+#define LED_PIN 3
+
 int main (void) {
   /* SystemCoreClockUpdate(); */
 
@@ -41,7 +43,7 @@ int main (void) {
   while ((RCC->CFGR & RCC_CFGR_SWS_PLL) == 0);
 
   SystemCoreClockUpdate();
-  volatile uint32_t bro = 0;
+  volatile uint32_t tick = 0;
   // Enable the GPIO clock
   RCC->IOPENR |= RCC_IOPENR_IOPBEN;
 
@@ -49,14 +51,14 @@ int main (void) {
   GPIOB->MODER = 0U;
 
   // Set PB3 to output
-  // NOTE: needs lots of clean up. Don't want to hard code the mode register
-  GPIOB->MODER |= (1 << 6);
+  GPIOB->MODER |= GPIO_MODER_MODE3_0;
+
   for (;;) {
-    if (bro == 1000000) {
-      bro = 0;
-      GPIOB->ODR ^= (1 << 3);
+    if (tick == 1000000) {
+      tick = 0;
+      GPIOB->ODR ^= (1 << LED_PIN);
     }
-    bro++;
+    tick++;
   }
 
   return 0;

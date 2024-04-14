@@ -74,3 +74,4 @@ debug: $(BUILD_DIR)/firmware.elf
 	@gdb \
 		--symbols=$(BUILD_DIR)/firmware.elf \
 		-ex 'target extended-remote localhost:4242'
+
