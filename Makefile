@@ -1,15 +1,28 @@
 BUILD_DIR = build
 INCLUDES = \
 -ICMSIS/Device/ST/STM32L0xx/Include \
--ICMSIS/Include
+-ICMSIS/Include \
+-Isubmodules/FreeRTOS-Kernel/include \
+-Isubmodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0 \
+-Iinclude
 
 CSOURCES = $(wildcard *.c)
+CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/*.c)
+CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0/*.c)
+CSOURCES += submodules/FreeRTOS-Kernel/portable/MemMang/heap_4.c
+
 ASMSOURCES = $(wildcard *.s)
 CPPSOURCES = $(wildcard *.cpp)
 
 COBJECTS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(CSOURCES))
 CPPOBJECTS = $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(CPPSOURCES))
 ASMOBJECTS = $(patsubst %.s,$(BUILD_DIR)/%.o,$(ASMSOURCES))
+
+OBJDIRS := $(patsubst %, $(BUILD_DIR)/%, $(CSOURCES))
+
+$(info PRINTING LOGS)
+$(info $(COBJECTS))
+$(info ENDING LOGS)
 
 CFLAGS += -mcpu=cortex-m0plus -mthumb
 CFLAGS += -O0 # optimization off
@@ -53,16 +66,19 @@ $(BUILD_DIR)/firmware.elf: $(COBJECTS) $(CPPOBJECTS) $(ASMOBJECTS)
 	arm-none-eabi-size $@
 
 $(BUILD_DIR)/%.o: %.c
+	# create the object directories first so that we don't need to figure out flattening
+	@mkdir -p $(OBJDIRS)
 	$(CC) -c $(CFLAGS) $^ -o $@
 
-$(BUILD_DIR)/%.o: %.cpp
-	$(CPP) -c $(CFLAGS) $^ -o $@
+# Uncomment and adjust if cpp support is needed later
+# $(BUILD_DIR)/%.o: %.cpp
+# 	$(CPP) -c $(CFLAGS) $^ -o $@
 
 $(BUILD_DIR)/%.o: %.s
 	$(CC) -c $(CFLAGS) $^ -o $@
 
 clean:
-	rm build/*
+	rm -rf build/*
 
 stlink: $(BUILD_DIR)/firmware.bin
 	@st-flash write $(BUILD_DIR)/fw.bin 0x8000000

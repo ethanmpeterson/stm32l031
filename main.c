@@ -8,8 +8,6 @@
 #define LED_PIN 3
 
 int main (void) {
-  /* SystemCoreClockUpdate(); */
-
   // Clock configuration and setup
   PWR->CR |= (1 << 8);
 
