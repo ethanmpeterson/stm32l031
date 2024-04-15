@@ -5,11 +5,24 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
+#include <stdint.h>
 
 /* #define SET_BIT_U32(value, bit_idx) ((uint32_t)value | (uint32_t)(1 << bit_idx)) */
 /* #define CLEAR_BIT_U32(value, bit_idx) ((uint32_t)value & (uint32_t)(~(1 << bit_idx))) */
 
 #define LED_PIN 3
+volatile uint32_t ticker = 0;
+
+static void myTask1(void *pvParameters) {
+  for (;;) {
+    if (ticker == 100000) {
+      ticker = 0;
+      GPIOB->ODR ^= (1 << LED_PIN);
+    } else {
+      ticker++;
+    }
+  }
+}
 
 int main (void) {
   // Clock configuration and setup
@@ -55,15 +68,13 @@ int main (void) {
   // Set PB3 to output
   GPIOB->MODER |= GPIO_MODER_MODE3_0;
 
-  vTaskStartScheduler();
+  portBASE_TYPE creation_return;
+  xTaskHandle xHandleTask1;
 
-  for (;;) {
-    if (tick == 1000000) {
-      tick = 0;
-      GPIOB->ODR ^= (1 << LED_PIN);
-    }
-    tick++;
-  }
+  /* Start the reg test tasks - defined in this file. */
+  xTaskCreate(myTask1, "Task1", 50, NULL, tskIDLE_PRIORITY + 1, &xHandleTask1);
+
+  vTaskStartScheduler();
 
   return 0;
 }
