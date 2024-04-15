@@ -1,2 +1,5 @@
 -ICMSIS/Device/ST/STM32L0xx/Include
 -ICMSIS/Include
+-Isubmodules/FreeRTOS-Kernel/include
+-Isubmodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0
+-Iinclude

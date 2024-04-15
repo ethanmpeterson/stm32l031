@@ -2,6 +2,10 @@
 #include "stm32l0xx.h"
 #include "system_stm32l0xx.h"
 
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "task.h"
+
 /* #define SET_BIT_U32(value, bit_idx) ((uint32_t)value | (uint32_t)(1 << bit_idx)) */
 /* #define CLEAR_BIT_U32(value, bit_idx) ((uint32_t)value & (uint32_t)(~(1 << bit_idx))) */
 
@@ -50,6 +54,8 @@ int main (void) {
 
   // Set PB3 to output
   GPIOB->MODER |= GPIO_MODER_MODE3_0;
+
+  vTaskStartScheduler();
 
   for (;;) {
     if (tick == 1000000) {
