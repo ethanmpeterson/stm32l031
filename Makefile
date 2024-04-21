@@ -7,11 +7,13 @@ INCLUDES = \
 -Iinclude
 
 CSOURCES = $(wildcard *.c)
+CSOURCES += $(wildcard src/*.c)
+CSOURCES += $(wildcard micro_specific/*.c)
 CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/*.c)
 CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0/*.c)
 CSOURCES += submodules/FreeRTOS-Kernel/portable/MemMang/heap_4.c
 
-ASMSOURCES = $(wildcard *.s)
+ASMSOURCES = $(wildcard micro_specific/*.s)
 CPPSOURCES = $(wildcard *.cpp)
 
 COBJECTS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(CSOURCES))
@@ -19,10 +21,7 @@ CPPOBJECTS = $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(CPPSOURCES))
 ASMOBJECTS = $(patsubst %.s,$(BUILD_DIR)/%.o,$(ASMSOURCES))
 
 OBJDIRS := $(patsubst %, $(BUILD_DIR)/%, $(CSOURCES))
-
-$(info PRINTING LOGS)
-$(info $(COBJECTS))
-$(info ENDING LOGS)
+ASMOBJDIRS := $(patsubst %, $(BUILD_DIR)/%, $(ASMSOURCES))
 
 CFLAGS += -mcpu=cortex-m0plus -mthumb
 CFLAGS += -O0 # optimization off
@@ -47,7 +46,7 @@ CFLAGS += $(INCLUDES)
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -mcpu=cortex-m0plus -mthumb
 LDFLAGS += -mfloat-abi=soft # SOFT FPU
-LDFLAGS += -T STM32L031K6TX_FLASH.ld
+LDFLAGS += -T micro_specific/STM32L031K6TX_FLASH.ld
 LDFLAGS += --specs=nano.specs
 # LDFLAGS += -lstdc++
 LDFLAGS += -lm
@@ -75,6 +74,7 @@ $(BUILD_DIR)/%.o: %.c
 # 	$(CPP) -c $(CFLAGS) $^ -o $@
 
 $(BUILD_DIR)/%.o: %.s
+	@mkdir -p $(ASMOBJDIRS)
 	$(CC) -c $(CFLAGS) $^ -o $@
 
 clean:
