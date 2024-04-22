@@ -17,18 +17,21 @@
 #define LED_PIN 3
 volatile uint32_t ticker = 0;
 
-static void myTask1(void *pvParameters) {
+static void blinky_task(void *pvParameters) {
   for (;;) {
-    if (ticker == 100000) {
-      ticker = 0;
-
-      // Transfer the byte if the peripheral is available
-      USART2->TDR = 'i';
-
       GPIOB->ODR ^= (1 << LED_PIN);
-    } else {
-      ticker++;
-    }
+      vTaskDelay(100);
+  }
+}
+
+static void uart_task(void *pvParameters) {
+  for (;;) {
+    // Transfer the byte if the peripheral is available
+    USART2->TDR = 'e';
+
+    // Higher priority task than the blinky
+    // Give some time for the blinky to run
+    vTaskDelay(1000);
   }
 }
 
@@ -66,7 +69,6 @@ int main (void) {
   while ((RCC->CFGR & RCC_CFGR_SWS_PLL) == 0);
 
   SystemCoreClockUpdate();
-  volatile uint32_t tick = 0;
   // Enable the GPIO clock
   RCC->IOPENR |= RCC_IOPENR_IOPBEN;
 
@@ -105,7 +107,8 @@ int main (void) {
   USART2->CR1 = USART_CR1_TE | USART_CR1_UE;
 
   xTaskHandle xHandleTask1;
-  xTaskCreate(myTask1, "Task1", 50, NULL, tskIDLE_PRIORITY + 1, &xHandleTask1);
+  xTaskCreate(blinky_task, "blinky", 50, NULL, tskIDLE_PRIORITY, &xHandleTask1);
+  xTaskCreate(uart_task, "uart", 50, NULL, tskIDLE_PRIORITY + 1, &xHandleTask1);
 
   vTaskStartScheduler();
 
