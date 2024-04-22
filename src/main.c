@@ -7,8 +7,12 @@
 #include "task.h"
 #include <stdint.h>
 
-/* #define SET_BIT_U32(value, bit_idx) ((uint32_t)value | (uint32_t)(1 << bit_idx)) */
-/* #define CLEAR_BIT_U32(value, bit_idx) ((uint32_t)value & (uint32_t)(~(1 << bit_idx))) */
+#define SET_BIT_U32(value, bit_idx)                                            \
+  ((uint32_t)value | (uint32_t)(1 << (bit_idx)))
+#define CLEAR_BIT_U32(value, bit_idx)                                          \
+  ((uint32_t)value & (uint32_t)(~(1 << (bit_idx))))
+
+#define UART_BAUD_RATE 115200
 
 #define LED_PIN 3
 volatile uint32_t ticker = 0;
@@ -17,6 +21,10 @@ static void myTask1(void *pvParameters) {
   for (;;) {
     if (ticker == 100000) {
       ticker = 0;
+
+      // Transfer the byte if the peripheral is available
+      USART2->TDR = 'i';
+
       GPIOB->ODR ^= (1 << LED_PIN);
     } else {
       ticker++;
@@ -68,10 +76,35 @@ int main (void) {
   // Set PB3 to output
   GPIOB->MODER |= GPIO_MODER_MODE3_0;
 
-  portBASE_TYPE creation_return;
-  xTaskHandle xHandleTask1;
+  // CONFIGURE UART
+  // PA2 Tx PA15 RX on this board
+  // Both need to be set to alternate function 4 (AF4) according to the
+  // datasheet
 
-  /* Start the reg test tasks - defined in this file. */
+  // Enable USART2 clock
+  RCC->APB1ENR |= 1 << RCC_APB1ENR_USART2EN_Pos;
+
+  RCC->IOPENR |= RCC_IOPENR_IOPAEN;
+  // Put PA2 in AF4
+  GPIOA->AFR[0] |= 4 << GPIO_AFRL_AFSEL2_Pos;
+  // Put PA15 in AF4
+  GPIOA->AFR[1] |= 4 << GPIO_AFRH_AFSEL15_Pos;
+
+  // Clear GPIO pins we are going to be using only
+  // Avoids interference with SWD debug lines on PORTA
+  GPIOA->MODER = CLEAR_BIT_U32(GPIOA->MODER, GPIO_MODER_MODE2_Pos);
+  GPIOA->MODER = CLEAR_BIT_U32(GPIOA->MODER, GPIO_MODER_MODE2_Pos + 1);
+  GPIOA->MODER = CLEAR_BIT_U32(GPIOA->MODER, GPIO_MODER_MODE15_Pos);
+  GPIOA->MODER = CLEAR_BIT_U32(GPIOA->MODER, GPIO_MODER_MODE15_Pos + 1);
+
+  // 10 is alternate function mode. Will set this for PA2 and PA15
+  GPIOA->MODER |= (2 << GPIO_MODER_MODE2_Pos) | (2 << GPIO_MODER_MODE15_Pos);
+
+  // Use default 16 bit oversample
+  USART2->BRR = (SystemCoreClock / 115200);
+  USART2->CR1 = USART_CR1_TE | USART_CR1_UE;
+
+  xTaskHandle xHandleTask1;
   xTaskCreate(myTask1, "Task1", 50, NULL, tskIDLE_PRIORITY + 1, &xHandleTask1);
 
   vTaskStartScheduler();
