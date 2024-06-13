@@ -1,3 +1,6 @@
 [submodule "submodules/FreeRTOS-Kernel"]
 	path = submodules/FreeRTOS-Kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+[submodule "submodules/hal"]
+	path = submodules/hal
+	url = git@github.com:ethanmpeterson/hal.git

@@ -4,10 +4,12 @@ INCLUDES = \
 -ICMSIS/Include \
 -Isubmodules/FreeRTOS-Kernel/include \
 -Isubmodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0 \
+-Isubmodules/hal/include \
 -Iinclude
 
 CSOURCES = $(wildcard *.c)
 CSOURCES += $(wildcard src/*.c)
+CSOURCES += $(wildcard src/hal/*.c)
 CSOURCES += $(wildcard micro_specific/*.c)
 CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/*.c)
 CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0/*.c)
