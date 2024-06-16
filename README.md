@@ -1,10 +1,8 @@
-# stm32l031
-Example Bare Metal Project for the Nucleo STM32L031 Development Board.
+# Bare Metal Project Template: STM32L031
+This repository contains an example C project for the STM32L031 microcontroller.
+Basic CMSIS headers for register access are provided in addition to an example
+MakeFile which pulls in FreeRTOS.
 
-# Notes
-- Linker Script was generated in STM32Cube IDE
-- FreeRTOS
-  - Generated project showed heap_4 is the correct selection for this micro.
-- Assembly startup code matching the linker script is also found in the Cube IDE generated project
-- Take an example clang complete file from my bare-metal repo. Also check the
-  dotfiles repo for the correct emacs config to get autocomplete working.
+
+NOTE: This repository is still a work in progress. However, it serves as a
+foundation for those looking to avoid STM32CUBE IDE generated projects.
