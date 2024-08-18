@@ -1,5 +1,7 @@
+#include "hal_uart.h"
 #include "stm32l031xx.h"
 #include "stm32l0xx.h"
+
 #include "system_stm32l0xx.h"
 
 #include "FreeRTOS.h"
@@ -36,8 +38,10 @@ static void uart_task(void *pvParameters) {
   }
 }
 
-int main (void) {
-  (void) hal_init();
+int main(void) {
+  (void)hal_init();
+
+  (void)hal_uart_init(NULL);
 
   // Enable the GPIO clock
   RCC->IOPENR |= RCC_IOPENR_IOPBEN;
