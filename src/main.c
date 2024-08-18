@@ -1,4 +1,5 @@
-#include "hal_uart.h"
+#include <stdint.h>
+
 #include "stm32l031xx.h"
 #include "stm32l0xx.h"
 
@@ -7,9 +8,10 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
-#include <stdint.h>
 
 #include "hal.h"
+#include "hal_uart.h"
+#include "hal_uart_microSpecific.h"
 
 // Device / Board Layer Imports
 
@@ -30,7 +32,7 @@ static void blinky_task(void *pvParameters) {
 static void uart_task(void *pvParameters) {
   for (;;) {
     // Transfer the byte if the peripheral is available
-    USART2->TDR = 'e';
+    (void)hal_uart_sendByte(HAL_UART_CHANNEL_COM_PORT, 'e');
 
     // Higher priority task than the blinky
     // Give some time for the blinky to run
@@ -41,7 +43,7 @@ static void uart_task(void *pvParameters) {
 int main(void) {
   (void)hal_init();
 
-  (void)hal_uart_init(NULL);
+  hal_uart_microSpecific_init();
 
   // Enable the GPIO clock
   RCC->IOPENR |= RCC_IOPENR_IOPBEN;

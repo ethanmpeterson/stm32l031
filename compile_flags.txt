@@ -3,4 +3,5 @@
 -Isubmodules/FreeRTOS-Kernel/include
 -Isubmodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0
 -Isubmodules/hal/include
+-Isrc/hal
 -Iinclude

@@ -5,12 +5,14 @@ INCLUDES = \
 -Isubmodules/FreeRTOS-Kernel/include \
 -Isubmodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0 \
 -Isubmodules/hal/include \
--Iinclude
+-Iinclude \
+-Isrc/hal
 
 CSOURCES = $(wildcard *.c)
 CSOURCES += $(wildcard src/*.c)
 CSOURCES += $(wildcard src/hal/*.c)
 CSOURCES += $(wildcard micro_specific/*.c)
+CSOURCES += $(wildcard submodules/hal/src/*.c)
 CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/*.c)
 CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0/*.c)
 CSOURCES += submodules/FreeRTOS-Kernel/portable/MemMang/heap_4.c
