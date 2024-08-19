@@ -54,15 +54,6 @@ int main(void) {
   (void)hal_gpio_microSpecific_init();
   (void)hal_uart_microSpecific_init();
 
-  // Enable the GPIO clock
-  RCC->IOPENR |= RCC_IOPENR_IOPBEN;
-
-  // Inits to all 1s clear it so that all pins are input
-  GPIOB->MODER = 0U;
-
-  // Set PB3 to output
-  GPIOB->MODER |= GPIO_MODER_MODE3_0;
-
   xTaskHandle xHandleTask1;
   xTaskCreate(blinky_task, "blinky", 50, NULL, tskIDLE_PRIORITY,
               &xHandleTask1);
