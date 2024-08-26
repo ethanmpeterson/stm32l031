@@ -7,6 +7,11 @@
 hal_error_E hal_init() {
   // Clock configuration and setup
   // Disable backup write protection
+
+  // NOTE: additional logic here needed to not re-configure this through an SW
+  // reset or wake from sleep. As in, the backup write protect should only get
+  // set in certain cases. Or maybe since they are unchanged between resets no
+  // special is handling is needed.
   PWR->CR |= PWR_CR_DBP;
 
   // Enable HSI, PLL and set prescalers
