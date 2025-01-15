@@ -10,11 +10,13 @@
 
 static hal_error_E hal_uart_microSpecific_initComPortChannel(void);
 static hal_error_E hal_uart_microSpecific_sendComPortByte(uint8_t data);
+static hal_error_E hal_uart_microSpecific_receiveComPortByte(uint8_t *data);
 
 static const hal_uart_channelConfig_S hal_uart_channelConfigs[HAL_UART_CHANNEL_COUNT] = {
   [HAL_UART_CHANNEL_COM_PORT] = {
     .initChannel = hal_uart_microSpecific_initComPortChannel,
     .sendByte    = hal_uart_microSpecific_sendComPortByte,
+    .receiveByte = hal_uart_microSpecific_receiveComPortByte,
   },
 };
 
@@ -53,11 +55,11 @@ static hal_error_E hal_uart_microSpecific_initComPortChannel(void) {
   GPIOA->MODER = CLEAR_BIT_U32(GPIOA->MODER, GPIO_MODER_MODE15_Pos + 1);
 
   // 10 is alternate function mode. Will set this for PA2 and PA15
-  GPIOA->MODER |= (2 << GPIO_MODER_MODE2_Pos) | (2 << GPIO_MODER_MODE15_Pos);
+  GPIOA->MODER |= (uint32_t)(2 << GPIO_MODER_MODE2_Pos) | (uint32_t)(2 << GPIO_MODER_MODE15_Pos);
 
   // Use default 16 bit oversample
   USART2->BRR = (SystemCoreClock / 115200);
-  USART2->CR1 = USART_CR1_TE | USART_CR1_UE;
+  USART2->CR1 = USART_CR1_TE | USART_CR1_UE | USART_CR1_RE;
 
   return HAL_ERROR_OK;
 }
@@ -69,3 +71,16 @@ static hal_error_E hal_uart_microSpecific_sendComPortByte(uint8_t data) {
 
   return HAL_ERROR_OK;
 }
+
+static hal_error_E hal_uart_microSpecific_receiveComPortByte(uint8_t *data) {
+  hal_error_E ret = HAL_ERROR_OK;
+
+  if ((USART2->ISR & USART_ISR_RXNE) == USART_ISR_RXNE) {
+    *data = USART2->RDR;
+  } else {
+    ret = HAL_ERROR_ERR;
+  }
+
+  return ret;
+}
+

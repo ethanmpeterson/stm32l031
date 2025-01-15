@@ -87,10 +87,42 @@ static hal_error_E hal_gpio_microSpecific_setLEDPin(hal_gpio_pinState_E pinState
 }
 
 static hal_error_E hal_gpio_microSpecific_setLEDPinMode(hal_gpio_pinMode_E pinMode) {
-  return HAL_ERROR_OK;
+  hal_error_E ret = HAL_ERROR_OK;
+
+  switch (pinMode) {
+    case HAL_GPIO_PINMODE_OUTPUT_PUSH_PULL:
+      break;
+    case HAL_GPIO_PINMODE_OUTPUT_OPEN_DRAIN:
+      break;
+    case HAL_GPIO_PINMODE_INPUT:
+      break;
+
+    case HAL_GPIO_PINMODE_COUNT:
+    case HAL_GPIO_PINMODE_UNKNOWN:
+    default:
+      ret = HAL_ERROR_ERR;
+      break;
+  }
+
+  return ret;
 }
 
 static hal_error_E hal_gpio_microSpecific_setLEDPullMode(hal_gpio_pullMode_E pullMode) {
-  return HAL_ERROR_OK;
+  hal_error_E ret = HAL_ERROR_OK;
+
+  switch (pullMode) {
+  case HAL_GPIO_PULLMODE_NONE:
+  case HAL_GPIO_PULLMODE_PULLUP:
+  case HAL_GPIO_PULLMODE_PULLDOWN:
+    break;
+
+  case HAL_GPIO_PULLMODE_COUNT:
+  case HAL_GPIO_PULLMODE_UNKNOWN:
+  default:
+    ret = HAL_ERROR_ERR;
+    break;
+  }
+
+  return ret;
 }
 
