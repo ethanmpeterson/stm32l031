@@ -7,22 +7,9 @@ extern "C" {
 #endif
 
 typedef enum {
-    HAL_I2C_ADDRESS_MODE_7_BIT,
-    HAL_I2C_ADDRESS_MODE_10_BIT
-} hal_i2c_address_mode;
-
-typedef enum {
-    HAL_I2C_SPEED_MODE_STANDARD,
-    HAL_I2C_SPEED_MODE_FAST,
-    HAL_I2C_SPEED_MODE_FAST_PLUS
-} hal_i2c_speed_mode;
-
-typedef enum {
-    HAL_I2C_MODE_MASTER_TRANSMITTER,
-    HAL_I2C_MODE_MASTER_RECEIVER,
-    HAL_I2C_MODE_SLAVE_TRANSMITTER,
-    HAL_I2C_MODE_SLAVE_RECEIVER
-} hal_i2c_mode;
+    HAL_I2C_CHANNEL_1,
+    HAL_I2C_CHANNEL_COUNT
+} hal_i2c_channel_E;
 
 hal_error_E hal_i2c_microSpecific_init(void);
 
