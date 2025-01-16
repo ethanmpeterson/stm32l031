@@ -19,6 +19,8 @@
 #include "hal_rtc.h"
 #include "hal_rtc_microSpecific.h"
 
+#include "interrupts.h"
+
 // Device / Board Layer Imports
 
 // Application Layer Imports
@@ -93,6 +95,12 @@ static void rtc_task(void *pvParameters) {
   }
 }
 
+void USART2_IRQHandler(void) {
+  char receivedChar;
+  hal_uart_receiveChar(HAL_UART_CHANNEL_COM_PORT, &receivedChar);
+  hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, receivedChar);
+}
+
 int main(void) {
   (void)hal_init();
 
@@ -111,6 +119,13 @@ int main(void) {
   };
 
   hal_rtc_setTime(&initialTime);
+
+  // ENABLE USART2 Interrupt in the NVIC
+  // Use lowest priority, might need to tinker with this later
+  NVIC_SetPriority(USART2_IRQn, 0x03);
+  NVIC_EnableIRQ(USART2_IRQn);
+
+  for (;;);
 
   // These handles are used to identify the tasks and reference them.
   // Suspend, resume, notify etc.
