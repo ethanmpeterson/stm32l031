@@ -59,7 +59,7 @@ static hal_error_E hal_uart_microSpecific_initComPortChannel(void) {
 
   // Use default 16 bit oversample
   USART2->BRR = (SystemCoreClock / 115200);
-  USART2->CR1 = USART_CR1_TE | USART_CR1_UE | USART_CR1_RE;
+  USART2->CR1 = USART_CR1_TE | USART_CR1_UE | USART_CR1_RE | USART_CR1_RXNEIE;
 
   return HAL_ERROR_OK;
 }
