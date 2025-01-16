@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 typedef enum {
-    HAL_I2C_CHANNEL_1,
+    HAL_I2C_CHANNEL_IMU,
     HAL_I2C_CHANNEL_COUNT
 } hal_i2c_channel_E;
 

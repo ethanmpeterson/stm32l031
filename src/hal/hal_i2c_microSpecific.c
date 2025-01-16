@@ -9,11 +9,13 @@
 //all should be private because of the static
 static hal_error_E hal_i2c_microSpecific_initI2CChannel1(void);
 static hal_error_E hal_i2c_microSpecific_sendChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes);
-static hal_error_E hal_i2c_receiveI2CChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes);
+static hal_error_E hal_i2c_microSpecific_receiveI2CChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes);
 
 static const hal_i2c_channelConfig_S hal_i2c_channelConfigs[HAL_I2C_CHANNEL_COUNT] = {
     [HAL_I2C_CHANNEL_1] = {
         .initChannel = hal_i2c_microSpecific_initI2CChannel1,
+        .sendData    = hal_i2c_microSpecific_sendChannel1Data,
+        .receiveData = hal_i2c_microSpecific_receiveI2CChannel1Data,
         .sendData    = hal_i2c_microSpecific_sendChannel1Data
     }
 };
@@ -61,8 +63,6 @@ hal_error_E hal_i2c_microSpecific_initI2CChannel1(void) {
 
 hal_error_E hal_i2c_microSpecific_sendChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes) {
 
-    //Set number of bytes to be received
-
     uint16_t addressWidthMsk = 0xFC00;
 
     if (addressWidthMsk & address) {
@@ -79,7 +79,6 @@ hal_error_E hal_i2c_microSpecific_sendChannel1Data(uint16_t address, uint8_t* da
     I2C1->CR2 &= I2C_CR2_START_Msk;
 
 
-
     I2C1->CR2 &= nBytes << I2C_CR2_NBYTES_Pos;
 
     for (uint8_t i = 0; i < nBytes; i++) {
@@ -93,7 +92,7 @@ hal_error_E hal_i2c_microSpecific_sendChannel1Data(uint16_t address, uint8_t* da
     }
 }
 
-hal_error_E hal_i2c_receiveI2CChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes) {
+hal_error_E hal_i2c_microSpecific_receiveI2CChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes) {
     
     uint16_t addressWidthMsk = 0xFC00;
 
