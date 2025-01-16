@@ -54,3 +54,6 @@ dkms.conf
 
 # Misc
 *.pdf-view-restore
+*.#*
+build/
+linkermap.html

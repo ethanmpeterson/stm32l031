@@ -5,14 +5,18 @@ INCLUDES = \
 -Isubmodules/FreeRTOS-Kernel/include \
 -Isubmodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0 \
 -Isubmodules/hal/include \
+-Isubmodules/hal/include/dev \
 -Iinclude \
--Isrc/hal
+-Isrc/hal \
+-Isrc/dev
 
 CSOURCES = $(wildcard *.c)
 CSOURCES += $(wildcard src/*.c)
 CSOURCES += $(wildcard src/hal/*.c)
+CSOURCES += $(wildcard src/dev/*.c)
 CSOURCES += $(wildcard micro_specific/*.c)
 CSOURCES += $(wildcard submodules/hal/src/*.c)
+CSOURCES += $(wildcard submodules/hal/src/dev/*.c)
 CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/*.c)
 CSOURCES += $(wildcard submodules/FreeRTOS-Kernel/portable/GCC/ARM_CM0/*.c)
 CSOURCES += submodules/FreeRTOS-Kernel/portable/MemMang/heap_4.c
@@ -28,7 +32,7 @@ OBJDIRS := $(patsubst %, $(BUILD_DIR)/%, $(CSOURCES))
 ASMOBJDIRS := $(patsubst %, $(BUILD_DIR)/%, $(ASMSOURCES))
 
 CFLAGS += -mcpu=cortex-m0plus -mthumb
-CFLAGS += -O0 # optimization off
+CFLAGS += -O1 # optimization off
 CFLAGS += -std=gnu11 # use GNU 11 standard
 CFLAGS += -mfloat-abi=soft # SOFT FPU
 CFLAGS += -fno-common
@@ -41,13 +45,16 @@ CFLAGS += -fsingle-precision-constant
 CFLAGS += -fomit-frame-pointer # do not use fp if not needed
 CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += -fstack-usage
+CFLAGS += -fcallgraph-info
+CFLAGS += -Wstack-usage=75
 CFLAGS += -g3
 CFLAGS += --specs=nosys.specs
 CFLAGS += -g
 CFLAGS += $(INCLUDES)
 
 
-LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -Wl,--gc-sections,--print-memory-usage
+LDFLAGS += -Wl,-Map=$(BUILD_DIR)/firmware.map
 LDFLAGS += -mcpu=cortex-m0plus -mthumb
 LDFLAGS += -mfloat-abi=soft # SOFT FPU
 LDFLAGS += -T micro_specific/STM32L031K6TX_FLASH.ld
@@ -94,4 +101,7 @@ debug: $(BUILD_DIR)/firmware.elf
 	@gdb \
 		--symbols=$(BUILD_DIR)/firmware.elf \
 		-ex 'target extended-remote localhost:4242'
+
+linkermapviz: $(BUILD_DIR)/firmware.map
+	@linkermapviz < $(BUILD_DIR)/firmware.map
 

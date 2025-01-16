@@ -21,7 +21,7 @@ static const hal_uart_channelConfig_S hal_uart_channelConfigs[HAL_UART_CHANNEL_C
 };
 
 // Config
-static hal_uart_config_S hal_uart_config = {
+static const hal_uart_config_S hal_uart_config = {
   .channels     = hal_uart_channelConfigs,
   .channelCount = HAL_UART_CHANNEL_COUNT,
 };
