@@ -18,19 +18,16 @@ static const hal_i2c_channelConfig_S hal_i2c_channelConfigs[HAL_I2C_CHANNEL_COUN
     }
 };
 
-hal_error_E hal_i2c_microSpecific_init(void) {
-
-    return hal_i2c_init(&hal_i2c_config);
-}
-
-
-
 static hal_i2c_config_S hal_i2c_config = {
     .channels     = hal_i2c_channelConfigs,
     .channelCount = HAL_I2C_CHANNEL_COUNT
 
 };
 
+hal_error_E hal_i2c_microSpecific_init(void) {
+
+    return hal_i2c_init(&hal_i2c_config);
+}
 
 hal_error_E hal_i2c_microSpecific_initI2CChannel1(void) {
 
