@@ -101,9 +101,11 @@ void USART2_IRQHandler(void) {
   hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, receivedChar);
 }
 
+
 void I2C1_IRQHandler(void) {
   
 }
+
 
 int main(void) {
   (void)hal_init();
@@ -128,6 +130,7 @@ int main(void) {
   // Use lowest priority, might need to tinker with this later
   NVIC_SetPriority(USART2_IRQn, 0x03);
   NVIC_EnableIRQ(USART2_IRQn);
+
 
   //Enable I2C1 Interrupt in the NVIC using lowest priority
   NVIC_SetPriority(I2C1_IRQn, 0x03);
