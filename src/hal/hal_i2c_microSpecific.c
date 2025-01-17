@@ -10,20 +10,21 @@
 static hal_error_E hal_i2c_microSpecific_initI2CChannel1(void);
 static hal_error_E hal_i2c_microSpecific_sendChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes);
 static hal_error_E hal_i2c_microSpecific_receiveI2CChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes);
+static hal_error_E hal_i2c_microSpecific_IRQHandler(void);
 
 static const hal_i2c_channelConfig_S hal_i2c_channelConfigs[HAL_I2C_CHANNEL_COUNT] = {
-    [HAL_I2C_CHANNEL_1] = {
+    [HAL_I2C_CHANNEL_IMU] = {
         .initChannel = hal_i2c_microSpecific_initI2CChannel1,
         .sendData    = hal_i2c_microSpecific_sendChannel1Data,
         .receiveData = hal_i2c_microSpecific_receiveI2CChannel1Data,
-        .sendData    = hal_i2c_microSpecific_sendChannel1Data
+        .sendData    = hal_i2c_microSpecific_sendChannel1Data,
+        .IRQ_Handler = hal_i2c_microSpecific_IRQHandler
     }
 };
 
 static hal_i2c_config_S hal_i2c_config = {
     .channels     = hal_i2c_channelConfigs,
     .channelCount = HAL_I2C_CHANNEL_COUNT
-
 };
 
 hal_error_E hal_i2c_microSpecific_init(void) {
@@ -50,6 +51,15 @@ hal_error_E hal_i2c_microSpecific_initI2CChannel1(void) {
     
 
     I2C1->TIMINGR = 0x00B07CB4;
+
+    //Enable interrupt on transfer complete
+    I2C1->CR1 &= I2C_CR1_TCIE_Msk;
+
+    //Enable interrupt on receive byte
+    I2C1->CR1 &= I2C_CR1_RXIE_Msk;
+
+    //Enable interrupt on transfer byte
+    I2C1->CR1 &= I2C_CR1_TXIE_Msk;
 
     //NOSTRETCH must be kept clear in master mode
     I2C1->CR1 &= ~(1 << I2C_CR1_NOSTRETCH_Pos);
@@ -106,16 +116,36 @@ hal_error_E hal_i2c_microSpecific_receiveI2CChannel1Data(uint16_t address, uint8
     //Set the address
     I2C1->CR2 &= I2C_CR2_SADD & address << I2C_CR2_SADD_Pos;
 
-    //Start
-    I2C1->CR2 &= I2C_CR2_START_Msk;
-
     //Set number of bytes to be received
     I2C1->CR2 &= nBytes << I2C_CR2_NBYTES_Pos;
+
+    //Start
+    I2C1->CR2 &= I2C_CR2_START_Msk;
 
     for (uint8_t i = 0; i < nBytes; i++) {
         while (!(I2C1->ISR & I2C_ISR_RXNE_Msk));
         *data = (uint8_t)I2C1->RXDR;
 
         data++;
+    }
+}
+
+hal_error_E hal_i2c_microSpecific_transferNextByte(void) {
+
+}
+
+hal_error_E hal_i2c_microSpecific_receiveNextBytes(void) {
+
+}
+
+
+
+hal_error_E hal_i2c_microSpecific_IRQHandler(void) {
+    if (I2C1->ISR & I2C_ISR_TC_Msk) {
+        //call function to handle transfer complete
+    } else if (I2C1->ISR & I2C_ISR_TXIS_Msk) {
+        //Call function to put next byte in I2C_TXDR
+    } else if (I2C1->ISR & I2C_ISR_RXNE_Msk) {
+        //Call function to store byte from I2C_RXDR
     }
 }

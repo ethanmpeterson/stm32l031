@@ -103,7 +103,7 @@ void USART2_IRQHandler(void) {
 
 
 void I2C1_IRQHandler(void) {
-  
+  hal_i2c_IRQHandler();
 }
 
 
