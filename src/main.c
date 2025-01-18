@@ -19,6 +19,9 @@
 #include "hal_rtc.h"
 #include "hal_rtc_microSpecific.h"
 
+#include "hal_i2c.h"
+#include "hal_i2c_microSpecific.h"
+
 #include "interrupts.h"
 
 // Device / Board Layer Imports
@@ -101,12 +104,29 @@ void USART2_IRQHandler(void) {
   hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, receivedChar);
 }
 
+//Perform IRQ handling here, read value and clear flag call from microspecific
+void I2C1_IRQHandler(void) {
+  if (I2C1->ISR & I2C_ISR_TC_Msk) {
+    hal_i2c_data_transfer_complete(HAL_I2C_CHANNEL_IMU);
+  }
+  if (I2C1->ISR & I2C_ISR_TXIS_Msk) {
+    //Call function to put next byte in I2C_TXDR
+    hal_i2c_transmit_next_byte(HAL_I2C_CHANNEL_IMU);
+  }
+  if (I2C1->ISR & I2C_ISR_RXNE_Msk) {
+    //Call function to store byte from I2C_RXDR
+    hal_i2c_receive_next_byte(HAL_I2C_CHANNEL_IMU);
+  }
+}
+
+
 int main(void) {
   (void)hal_init();
 
   (void)hal_rtc_microSpecific_init();
   (void)hal_gpio_microSpecific_init();
   (void)hal_uart_microSpecific_init();
+  (void)hal_i2c_microSpecific_init();
 
   hal_rtc_time_S initialTime = {
     .year = 0, // 2000
@@ -124,6 +144,11 @@ int main(void) {
   // Use lowest priority, might need to tinker with this later
   NVIC_SetPriority(USART2_IRQn, 0x03);
   NVIC_EnableIRQ(USART2_IRQn);
+
+
+  //Enable I2C1 Interrupt in the NVIC using lowest priority
+  NVIC_SetPriority(I2C1_IRQn, 0x03);
+  NVIC_EnableIRQ(I2C1_IRQn);
 
   for (;;);
 

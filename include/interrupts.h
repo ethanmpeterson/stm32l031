@@ -10,6 +10,8 @@ extern "C" {
 
 void USART2_IRQHandler(void);
 
+void I2C1_IRQHandler(void);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
