@@ -101,6 +101,10 @@ void USART2_IRQHandler(void) {
   hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, receivedChar);
 }
 
+void EXTI4_15_IRQHandler(void) {
+  //Put code here to drive the tubes for specified amount of time, and then sleep again.
+}
+
 int main(void) {
   (void)hal_init();
 
