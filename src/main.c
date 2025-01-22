@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 
 #include "stm32l0xx.h"
 
@@ -7,6 +8,8 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
+#include "portmacro.h"
+#include "semphr.h"
 
 #include "hal.h"
 #include "hal_uart.h"
@@ -29,8 +32,29 @@
 
 #define UART_BAUD_RATE 115200
 
-static void blinky_task(void *pvParameters) {
+// Task Handles
+// These handles are used to identify the tasks and reference them.
+// Suspend, resume, notify etc.
+xTaskHandle blinkyTaskHandle;
+xTaskHandle rtcTaskHandle;
+xTaskHandle consoleTaskHandle;
 
+extern volatile char receivedString[DEV_CONSOLE_MAX_COMMAND_LENGTH];
+extern volatile bool receivedStringReady;
+static void console_task(void *pvParameters) {
+  for (;;) {
+    // If we receive this notification, the buffer is ready to be processed
+    if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) == pdTRUE) {
+      // Notifications mean the buffer is good to go. Process it
+      dev_console_processCommandString((char *)receivedString);
+      // Clear the ready flag and buffer so the ISR can start picking up new characters
+      memset((char *)receivedString, 0U, sizeof(receivedString));
+      receivedStringReady = false;
+    }
+  }
+}
+
+static void blinky_task(void *pvParameters) {
   TickType_t lastWakeTime = xTaskGetTickCount();
   // Blink the led at 10Hz
   const TickType_t freq = 100;
@@ -49,60 +73,19 @@ static void blinky_task(void *pvParameters) {
   }
 }
 
-/* static void rtc_task(void *pvParameters) { */
-/*   TickType_t lastWakeTime = xTaskGetTickCount(); */
-/*   const TickType_t freq = 1000; */
+static void rtc_task(void *pvParameters) {
+  TickType_t lastWakeTime = xTaskGetTickCount();
+  const TickType_t freq = 1000;
 
-/*   for (;;) { */
-/*     // Transfer the byte if the peripheral is available */
-/*     hal_rtc_time_S currentTime; */
-/*     currentTime.seconds = 0; */
-/*     (void)hal_rtc_getTime(&currentTime); */
-/*     char secondsTens = (char)((currentTime.seconds / 10) % 10) + '0'; */
-/*     char secondsUnits = (char)(currentTime.seconds % 10) + '0'; */
-/*     char minutesTens = (char)((currentTime.minute / 10) % 10) + '0'; */
-/*     char minutesUnits = (char)(currentTime.minute % 10) + '0'; */
-/*     char hoursTens = (char)((currentTime.hour / 10) % 10) + '0'; */
-/*     char hoursUnits = (char)(currentTime.hour % 10) + '0'; */
-/*     char dayTens = (char)((currentTime.day / 10) % 10) + '0'; */
-/*     char dayUnits = (char)(currentTime.day % 10) + '0'; */
-/*     char monthTens = (char)((currentTime.month / 10) % 10) + '0'; */
-/*     char monthUnits = (char)(currentTime.month % 10) + '0'; */
-/*     char yearTens = (char)((currentTime.year / 10) % 10) + '0'; */
-/*     char yearUnits = (char)(currentTime.year % 10) + '0'; */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '2'); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '0'); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, yearTens); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, yearUnits); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '/'); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, monthTens); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, monthUnits); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '/'); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, dayTens); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, dayUnits); */
-
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '-'); */
-
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, hoursTens); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, hoursUnits); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, ':'); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, minutesTens); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, minutesUnits); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, ':'); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, secondsTens); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, secondsUnits); */
-/*     (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '\n'); */
-
-/*     (void)dev_console_processCommandString("Why hello there"); */
-
-/*     vTaskDelayUntil(&lastWakeTime, freq); */
-/*   } */
-/* } */
+  for (;;) {
+    vTaskDelayUntil(&lastWakeTime, freq);
+  }
+}
 
 int main(void) {
   (void)hal_init();
 
-  /* (void)hal_rtc_microSpecific_init(); */
+  (void)hal_rtc_microSpecific_init();
   (void)hal_gpio_microSpecific_init();
   (void)hal_uart_microSpecific_init();
 
@@ -121,21 +104,13 @@ int main(void) {
   // Device layer init
   (void)dev_console_microSpecific_init();
 
-  // ENABLE USART2 Interrupt in the NVIC
-  // Use lowest priority, might need to tinker with this later
-  NVIC_SetPriority(USART2_IRQn, 0x03);
-  NVIC_EnableIRQ(USART2_IRQn);
-
-  /* for (;;); */
-
-  // These handles are used to identify the tasks and reference them.
-  // Suspend, resume, notify etc.
-  xTaskHandle blinkyTaskHandle;
-  /* xTaskHandle rtcTaskHandle; */
+  interrupts_init();
 
   // Task names must be < 16
   xTaskCreate(blinky_task, "blinky", 50, NULL, tskIDLE_PRIORITY, &blinkyTaskHandle);
-  /* xTaskCreate(rtc_task, "rtc", 50, NULL, tskIDLE_PRIORITY + 1, &rtcTaskHandle); */
+  xTaskCreate(rtc_task, "rtc", 50, NULL, tskIDLE_PRIORITY + 1, &rtcTaskHandle);
+  // Set console task as highest priority so nothing hangs
+  xTaskCreate(console_task, "console", 50, NULL, tskIDLE_PRIORITY + 2, &consoleTaskHandle);
 
   vTaskStartScheduler();
 

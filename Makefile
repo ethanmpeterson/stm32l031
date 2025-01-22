@@ -32,7 +32,7 @@ OBJDIRS := $(patsubst %, $(BUILD_DIR)/%, $(CSOURCES))
 ASMOBJDIRS := $(patsubst %, $(BUILD_DIR)/%, $(ASMSOURCES))
 
 CFLAGS += -mcpu=cortex-m0plus -mthumb
-CFLAGS += -O1 # optimization off
+CFLAGS += -O0 # optimization off
 CFLAGS += -std=gnu11 # use GNU 11 standard
 CFLAGS += -mfloat-abi=soft # SOFT FPU
 CFLAGS += -fno-common
