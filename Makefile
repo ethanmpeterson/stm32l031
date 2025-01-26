@@ -46,7 +46,7 @@ CFLAGS += -fomit-frame-pointer # do not use fp if not needed
 CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += -fstack-usage
 CFLAGS += -fcallgraph-info
-CFLAGS += -Wstack-usage=75
+CFLAGS += -Wstack-usage=64
 CFLAGS += -g3
 CFLAGS += --specs=nosys.specs
 CFLAGS += -g

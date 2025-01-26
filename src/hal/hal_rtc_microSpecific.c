@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "stm32l031xx.h"
@@ -134,6 +135,9 @@ static hal_error_E hal_rtc_microSpecific_private_getTimestamp(hal_rtc_time_S *ti
     uint8_t hoursTens = (uint8_t)((rawTimeRegister & RTC_TR_HT_Msk) >> RTC_TR_HT_Pos) * 10;
     uint8_t hoursUnits = (uint8_t)((rawTimeRegister & RTC_TR_HU_Msk) >> RTC_TR_HU_Pos);
     time->hour = hoursTens + hoursUnits;
+
+    uint8_t weekdayUnits = (uint8_t)((rawDateRegister & RTC_DR_WDU_Msk) >> RTC_DR_WDU_Pos);
+    time->weekday = weekdayUnits;
 
     uint8_t dayTens = (uint8_t)((rawDateRegister & RTC_DR_DT_Msk) >> RTC_DR_DT_Pos) * 10;
     uint8_t dayUnits = (uint8_t)((rawDateRegister & RTC_DR_DU_Msk) >> RTC_DR_DU_Pos);

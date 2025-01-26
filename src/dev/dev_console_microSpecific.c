@@ -1,3 +1,9 @@
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "dev_alarm.h"
+#include "dev_alarm_microSpecific.h"
 #include "hal.h"
 
 #include "hal_rtc.h"
@@ -30,6 +36,7 @@ hal_error_E dev_console_microSpecific_init(void) {
 }
 
 static hal_error_E dev_console_command_rtc(char **arg, uint32_t args) {
+  // Print a timestamp the 'rtc' command is run
   hal_rtc_time_S currentTime;
   (void)hal_rtc_getTime(&currentTime);
   char secondsTens = (char)((currentTime.seconds / 10) % 10) + '0';
@@ -66,6 +73,57 @@ static hal_error_E dev_console_command_rtc(char **arg, uint32_t args) {
   (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, secondsTens);
   (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, secondsUnits);
   (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '\n');
+
+  // Handle the CLI command
+  if (args <= 1) {
+    return HAL_ERROR_OK;
+  }
+
+  hal_error_E ret = HAL_ERROR_OK;
+  if (!strcmp(arg[0], "alarm")) {
+    if (args >= 2) {
+      // check the second argument for a alarm channel index
+      uint32_t val;
+      ret = dev_console_parseDecimalDigit(arg[1], &val);
+      if (ret == HAL_ERROR_OK && val < DEV_ALARM_CHANNEL_COUNT) {
+        // Print alarm info
+        dev_alarm_timeStamp_S alarmTime;
+        if (dev_alarm_getAlarmTimeStamp((dev_alarm_channel_E)val, &alarmTime) == HAL_ERROR_OK) {
+          char minutesTens = (char)((alarmTime.minute / 10) % 10) + '0';
+          char minutesUnits = (char)(alarmTime.minute % 10) + '0';
+          char hoursTens = (char)((alarmTime.hour / 10) % 10) + '0';
+          char hoursUnits = (char)(alarmTime.hour % 10) + '0';
+          (void)hal_uart_sendString(HAL_UART_CHANNEL_COM_PORT, "Alarm Time: ");
+
+          (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, hoursTens);
+          (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, hoursUnits);
+          (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, ':');
+          (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, minutesTens);
+          (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, minutesUnits);
+
+          (void)hal_uart_sendString(HAL_UART_CHANNEL_COM_PORT, "\nWeekday Mask: ");
+          // Print alarm bitmask
+          for (uint8_t i = 0; i < 7; i++) {
+            if ((1U << i & alarmTime.weekdayMask)) {
+              (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '1');
+            } else {
+              (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '0');
+            }
+          }
+          (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '\n');
+        } else {
+          ret = HAL_ERROR_ERR;
+          hal_uart_sendString(HAL_UART_CHANNEL_COM_PORT, "Unable to fetch alarm time for this channel\n");
+        }
+
+        if (dev_alarm_getStatus((dev_alarm_channel_E)val) == DEV_ALARM_STATUS_ACTIVE) {
+          hal_uart_sendString(HAL_UART_CHANNEL_COM_PORT, "ACTIVE\n");
+        } else {
+          hal_uart_sendString(HAL_UART_CHANNEL_COM_PORT, "INACTIVE\n");
+        }
+      }
+    }
+  }
 
   return HAL_ERROR_OK;
 }
