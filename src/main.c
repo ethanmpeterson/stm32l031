@@ -1,6 +1,8 @@
 #include <stdint.h>
+#include <string.h>
 
-#include "stm32l031xx.h"
+#include "FreeRTOSConfig.h"
+#include "dev_alarm.h"
 #include "stm32l0xx.h"
 
 #include "system_stm32l0xx.h"
@@ -8,6 +10,8 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
+#include "portmacro.h"
+#include "semphr.h"
 
 #include "hal.h"
 #include "hal_uart.h"
@@ -19,6 +23,10 @@
 #include "hal_rtc.h"
 #include "hal_rtc_microSpecific.h"
 
+#include "dev_console.h"
+#include "dev_console_microSpecific.h"
+#include "dev_alarm_microSpecific.h"
+
 #include "interrupts.h"
 
 // Device / Board Layer Imports
@@ -27,13 +35,35 @@
 
 #define UART_BAUD_RATE 115200
 
-static void blinky_task(void *pvParameters) {
+// Task Handles
+// These handles are used to identify the tasks and reference them.
+// Suspend, resume, notify etc.
+xTaskHandle slowTaskHandle;
+xTaskHandle fastTaskHandle;
+xTaskHandle consoleTaskHandle;
 
+extern volatile char receivedString[DEV_CONSOLE_MAX_COMMAND_LENGTH];
+extern volatile bool receivedStringReady;
+static void console_task(void *pvParameters) {
+  for (;;) {
+    // If we receive this notification, the buffer is ready to be processed
+    if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) == pdTRUE) {
+      // Notifications mean the buffer is good to go. Process it
+      dev_console_processCommandString((char *)receivedString);
+      // Clear the ready flag and buffer so the ISR can start picking up new characters
+      memset((char *)receivedString, 0U, sizeof(receivedString));
+      receivedStringReady = false;
+    }
+  }
+}
+
+static void task_100ms(void *pvParameters) {
   TickType_t lastWakeTime = xTaskGetTickCount();
   // Blink the led at 10Hz
   const TickType_t freq = 100;
 
   for (;;) {
+    // Blinky
     hal_gpio_pinState_E currentPinState = hal_gpio_readInputState(HAL_GPIO_CHANNEL_LED);
     hal_gpio_pinState_E nextPinState;
     if (currentPinState == HAL_GPIO_PINSTATE_ON) {
@@ -43,62 +73,23 @@ static void blinky_task(void *pvParameters) {
     }
     hal_gpio_setOutputState(HAL_GPIO_CHANNEL_LED, nextPinState);
 
+    // Device layer state machines
+    dev_alarm_runLoop();
+
+    // App layer state machines
+
     vTaskDelayUntil(&lastWakeTime, freq);
   }
 }
 
-static void rtc_task(void *pvParameters) {
+static void task_10ms(void *pvParameters) {
   TickType_t lastWakeTime = xTaskGetTickCount();
-  const TickType_t freq = 1000;
+  // Blink the led at 100Hz
+  const TickType_t freq = 10;
 
   for (;;) {
-    // Transfer the byte if the peripheral is available
-    hal_rtc_time_S currentTime;
-    currentTime.seconds = 0;
-    (void)hal_rtc_getTime(&currentTime);
-    char secondsTens = (char)((currentTime.seconds / 10) % 10) + '0';
-    char secondsUnits = (char)(currentTime.seconds % 10) + '0';
-    char minutesTens = (char)((currentTime.minute / 10) % 10) + '0';
-    char minutesUnits = (char)(currentTime.minute % 10) + '0';
-    char hoursTens = (char)((currentTime.hour / 10) % 10) + '0';
-    char hoursUnits = (char)(currentTime.hour % 10) + '0';
-    char dayTens = (char)((currentTime.day / 10) % 10) + '0';
-    char dayUnits = (char)(currentTime.day % 10) + '0';
-    char monthTens = (char)((currentTime.month / 10) % 10) + '0';
-    char monthUnits = (char)(currentTime.month % 10) + '0';
-    char yearTens = (char)((currentTime.year / 10) % 10) + '0';
-    char yearUnits = (char)(currentTime.year % 10) + '0';
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '2');
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '0');
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, yearTens);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, yearUnits);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '/');
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, monthTens);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, monthUnits);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '/');
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, dayTens);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, dayUnits);
-
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '-');
-
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, hoursTens);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, hoursUnits);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, ':');
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, minutesTens);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, minutesUnits);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, ':');
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, secondsTens);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, secondsUnits);
-    (void)hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, '\n');
-
     vTaskDelayUntil(&lastWakeTime, freq);
   }
-}
-
-void USART2_IRQHandler(void) {
-  char receivedChar;
-  hal_uart_receiveChar(HAL_UART_CHANNEL_COM_PORT, &receivedChar);
-  hal_uart_sendChar(HAL_UART_CHANNEL_COM_PORT, receivedChar);
 }
 
 int main(void) {
@@ -109,31 +100,29 @@ int main(void) {
   (void)hal_uart_microSpecific_init();
 
   hal_rtc_time_S initialTime = {
-    .year = 0, // 2000
-    .month = 9, // September
-    .day = 14,
-    .weekday = 4,
-    .hour = 13, // 1PM (24H format)
-    .minute = 32,
-    .seconds = 54
+      .year = 0,  // 2000
+      .month = 9, // September
+      .day = 14,
+      .weekday = 4, // Thursday
+      .hour = 7, // 1PM (24H format)
+      .minute = 29,
+      .seconds = 30
   };
 
   hal_rtc_setTime(&initialTime);
 
-  // ENABLE USART2 Interrupt in the NVIC
-  // Use lowest priority, might need to tinker with this later
-  NVIC_SetPriority(USART2_IRQn, 0x03);
-  NVIC_EnableIRQ(USART2_IRQn);
+  // Device layer init
+  (void)dev_console_microSpecific_init();
+  dev_alarm_microSpecific_init();
 
-  for (;;);
+  interrupts_init();
 
-  // These handles are used to identify the tasks and reference them.
-  // Suspend, resume, notify etc.
-  xTaskHandle blinkyTaskHandle;
-  xTaskHandle rtcTaskHandle;
-
-  xTaskCreate(blinky_task, "blinky", 50, NULL, tskIDLE_PRIORITY, &blinkyTaskHandle);
-  xTaskCreate(rtc_task, "rtc", 50, NULL, tskIDLE_PRIORITY + 1, &rtcTaskHandle);
+  // Stack is max 128 words given FreeRTOS heap size of 4096
+  // Task names must be < 16
+  xTaskCreate(task_100ms, "task_100ms", 32, NULL, tskIDLE_PRIORITY, &slowTaskHandle);
+  xTaskCreate(task_10ms, "task_10ms", 32, NULL, tskIDLE_PRIORITY, &fastTaskHandle);
+  // Set console task as highest priority so nothing hangs
+  xTaskCreate(console_task, "console", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &consoleTaskHandle);
 
   vTaskStartScheduler();
 
