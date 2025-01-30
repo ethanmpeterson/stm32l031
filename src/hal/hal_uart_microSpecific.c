@@ -12,11 +12,20 @@ static hal_error_E hal_uart_microSpecific_initComPortChannel(void);
 static hal_error_E hal_uart_microSpecific_sendComPortByte(uint8_t data);
 static hal_error_E hal_uart_microSpecific_receiveComPortByte(uint8_t *data);
 
+static hal_error_E hal_uart_microSpecific_initESPPortChannel(void);
+static hal_error_E hal_uart_microSpecific_sendESPPortByte(uint8_t data);
+static hal_error_E hal_uart_microSpecific_receiveESPPortByte(uint8_t *data);
+
 static const hal_uart_channelConfig_S hal_uart_channelConfigs[HAL_UART_CHANNEL_COUNT] = {
   [HAL_UART_CHANNEL_COM_PORT] = {
     .initChannel = hal_uart_microSpecific_initComPortChannel,
     .sendByte    = hal_uart_microSpecific_sendComPortByte,
     .receiveByte = hal_uart_microSpecific_receiveComPortByte,
+  },
+  [HAL_UART_CHANNEL_ESP_PORT] = {
+    .initChannel = hal_uart_microSpecific_initESPPortChannel,
+    .sendByte    = hal_uart_microSpecific_sendESPPortByte,
+    .receiveByte = hal_uart_microSpecific_receiveESPPortByte,
   },
 };
 
@@ -84,3 +93,47 @@ static hal_error_E hal_uart_microSpecific_receiveComPortByte(uint8_t *data) {
   return ret;
 }
 
+static hal_error_E hal_uart_microSpecific_initESPPortChannel(void) {
+
+  RCC->APB1ENR |= 1 << RCC_APB1ENR_USART2EN_Pos;
+
+  RCC->IOPENR |= RCC_IOPENR_IOPAEN;
+
+  //For now the ESP and COM port have to use PA2, will change once a custom board is made.
+  GPIOA->AFR[0] |= 6 << GPIO_AFRL_AFSEL2_Pos;
+  GPIOA->AFR[0] |= 6 << GPIO_AFRL_AFSEL3_Pos;
+
+  GPIOA->MODER = CLEAR_BIT_U32(GPIOA->MODER, GPIO_MODER_MODE2_Pos);
+  GPIOA->MODER = CLEAR_BIT_U32(GPIOA->MODER, GPIO_MODER_MODE2_Pos + 1);
+  GPIOA->MODER = CLEAR_BIT_U32(GPIOA->MODER, GPIO_MODER_MODE3_Pos);
+  GPIOA->MODER = CLEAR_BIT_U32(GPIOA->MODER, GPIO_MODER_MODE3_Pos + 1);
+
+  GPIOA->MODER |= 2 << GPIO_MODER_MODE2_Pos;
+  GPIOA->MODER |= 2 << GPIO_MODER_MODE2_Pos;
+
+  //Value to set the baud rate to 115200 for fck=32.768 khz
+  LPUART1->BRR = 0x115C7;
+  LPUART1->CR1 = 1 << USART_CR1_M1_Pos;
+
+  //Just enable LPUART, Receive, Transmit, and Receive Interrupt for now.
+  LPUART1->CR1 = USART_CR1_TE | USART_CR1_UE | USART_CR1_RE | USART_CR1_RXNEIE;
+}
+
+static hal_error_E hal_uart_microSpecific_sendESPPortByte(uint8_t data) {
+
+  //Wait until the transmit register is empty
+  while (!(LPUART1->ISR & USART_ISR_TXE));
+  LPUART1->TDR = data;
+
+  return HAL_ERROR_OK;
+}
+
+static hal_error_E hal_uart_microSpecific_receiveESPPortByte(uint8_t *data) {
+  hal_error_E ret = HAL_ERROR_OK;
+
+  if ((LPUART1->ISR & USART_ISR_RXNE) == USART_ISR_RXNE) {
+    *data = USART2->RDR;
+  } else {
+    ret = HAL_ERROR_ERR;
+  }
+}
