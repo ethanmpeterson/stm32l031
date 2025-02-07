@@ -60,7 +60,7 @@ LDFLAGS += -mfloat-abi=soft # SOFT FPU
 LDFLAGS += -T micro_specific/STM32L031K6TX_FLASH.ld
 LDFLAGS += --specs=nano.specs
 # LDFLAGS += -lstdc++
-LDFLAGS += -lm
+# LDFLAGS += -lm
 LDFLAGS += $(INCLUDES)
 
 
