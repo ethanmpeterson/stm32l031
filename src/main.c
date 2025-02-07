@@ -24,6 +24,7 @@
 #include "hal_rtc_microSpecific.h"
 
 #include "dev_wifi.h"
+#include "dev_wifi_microSpecific.h"
 
 #include "dev_console.h"
 #include "dev_console_microSpecific.h"

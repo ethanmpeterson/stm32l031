@@ -31,7 +31,7 @@ volatile uint32_t receivedCharCount = 0;
 volatile bool receivedStringReady = false;
 
 volatile uint8_t receivedESPCommand[DEV_WIFI_MAX_COMMAND_LENGTH] = {0};
-extern volatile uint8_t receivedByteCount = 0;
+extern volatile uint8_t receivedByteCount;
 volatile bool receivedESPCommandReady = false;
 
 void interrupts_init() {
@@ -42,6 +42,7 @@ void interrupts_init() {
 
   // ENABLE LPUART1 Interrupt in the NVIC
   // Use lowest priority
+  receivedByteCount = 0;
   NVIC_SetPriority(LPUART1_IRQn, 0x03);
   NVIC_EnableIRQ(LPUART1_IRQn);
 }

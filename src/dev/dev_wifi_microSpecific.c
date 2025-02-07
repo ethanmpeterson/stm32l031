@@ -68,13 +68,13 @@ static hal_error_E dev_wifi_command_setTime(uint8_t *args, uint8_t argsLen) {
 }
 
 static hal_error_E dev_wifi_command_setAlarm(uint8_t *args, uint8_t argsLen) {
-
+    return HAL_ERROR_OK;
 }
 
 static hal_error_E dev_wifi_command_getAlarms(uint8_t *args, uint8_t argsLen) {
-
+    return HAL_ERROR_OK;
 }
 
 static hal_error_E dev_wifi_command_removeAlarm(uint8_t *args, uint8_t argsLen) {
-
+    return HAL_ERROR_OK;
 }

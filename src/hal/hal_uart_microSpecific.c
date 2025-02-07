@@ -85,7 +85,7 @@ static hal_error_E hal_uart_microSpecific_receiveComPortByte(uint8_t *data) {
   hal_error_E ret = HAL_ERROR_OK;
 
   if ((USART2->ISR & USART_ISR_RXNE) == USART_ISR_RXNE) {
-    *data = USART2->RDR;
+    *data = (uint8_t)USART2->RDR;
   } else {
     ret = HAL_ERROR_ERR;
   }
@@ -117,6 +117,8 @@ static hal_error_E hal_uart_microSpecific_initESPPortChannel(void) {
 
   //Just enable LPUART, Receive, Transmit, and Receive Interrupt for now.
   LPUART1->CR1 = USART_CR1_TE | USART_CR1_UE | USART_CR1_RE | USART_CR1_RXNEIE;
+
+  return HAL_ERROR_OK;
 }
 
 static hal_error_E hal_uart_microSpecific_sendESPPortByte(uint8_t data) {
@@ -132,8 +134,10 @@ static hal_error_E hal_uart_microSpecific_receiveESPPortByte(uint8_t *data) {
   hal_error_E ret = HAL_ERROR_OK;
 
   if ((LPUART1->ISR & USART_ISR_RXNE) == USART_ISR_RXNE) {
-    *data = USART2->RDR;
+    *data = (uint8_t)LPUART1->RDR;
   } else {
     ret = HAL_ERROR_ERR;
   }
+
+  return ret;
 }
