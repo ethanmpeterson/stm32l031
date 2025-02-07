@@ -17,20 +17,33 @@
 #include "hal.h"
 #include "hal_uart.h"
 
+
 // Device Layer Imports
 #include "dev_console.h"
+#include "dev_wifi.h"
 
 extern xTaskHandle consoleTaskHandle;
+
+extern xTaskHandle ESPTaskHandle;
 
 volatile char receivedString[DEV_CONSOLE_MAX_COMMAND_LENGTH] = {0};
 volatile uint32_t receivedCharCount = 0;
 volatile bool receivedStringReady = false;
+
+volatile uint8_t receivedESPCommand[DEV_WIFI_MAX_COMMAND_LENGTH] = {0};
+extern volatile uint8_t receivedByteCount = 0;
+volatile bool receivedESPCommandReady = false;
 
 void interrupts_init() {
   // ENABLE USART2 Interrupt in the NVIC
   // Use lowest priority, might need to tinker with this later
   NVIC_SetPriority(USART2_IRQn, 0x03);
   NVIC_EnableIRQ(USART2_IRQn);
+
+  // ENABLE LPUART1 Interrupt in the NVIC
+  // Use lowest priority
+  NVIC_SetPriority(LPUART1_IRQn, 0x03);
+  NVIC_EnableIRQ(LPUART1_IRQn);
 }
 
 void USART2_IRQHandler(void) {
@@ -64,5 +77,37 @@ void USART2_IRQHandler(void) {
     memset((char *)receivedString, 0U, sizeof(receivedString));
     receivedCharCount = 0;
   }
+
+}
+
+void LPUART1_IRQHandler(void) {
+  // This ISR handler belongs to the ESP_PORT / ESP LPUART
+  // Right now only the receive interrupt is enabled.
+
+  uint8_t receivedByte;
+  hal_uart_receiveByte(HAL_UART_CHANNEL_ESP_PORT, &receivedByte);
+
+ 
+  if (receivedESPCommandReady) {
+    // Should think of a better way to deal with this as compared to the console there is the possibility to receive commands more quickly in succession
+    return;
+  }
+
+  if (receivedByteCount < DEV_WIFI_MAX_COMMAND_LENGTH - 1) {
+    // Put the byte in the buffer
+    receivedESPCommand[receivedByteCount] = receivedByte;
+    receivedByteCount++;
+
+    if (receivedByte == DEV_WIFI_COMMAND_END) {
+      // Indicate that the command has been received and then notify the wifi task
+      receivedESPCommandReady = true;
+      vTaskNotifyGiveFromISR(ESPTaskHandle, NULL);
+    }
+  } else {
+    // If the buffer is full and we never received a command end then clear it
+    memset((uint8_t *)receivedESPCommand, 0, sizeof(receivedESPCommand));
+    receivedByteCount = 0;
+  }
+
 
 }

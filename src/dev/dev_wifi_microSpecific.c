@@ -11,10 +11,10 @@
 #include "hal_rtc.h"
 #include "hal_rtc_microSpecific.h"
 
-static hal_error_E dev_wifi_command_setTime(char **arg, uint32_t args);
-static hal_error_E dev_wifi_command_setAlarm(char **arg, uint32_t args);
-static hal_error_E dev_wifi_command_getAlarms(char **arg, uint32_t args);
-static hal_error_E dev_wifi_command_removeAlarm(char **arg, uint32_t args);
+static hal_error_E dev_wifi_command_setTime(uint8_t *args, uint8_t argsLen);
+static hal_error_E dev_wifi_command_setAlarm(uint8_t *args, uint8_t argsLen);
+static hal_error_E dev_wifi_command_getAlarms(uint8_t *args, uint8_t argsLen);
+static hal_error_E dev_wifi_command_removeAlarm(uint8_t *args, uint8_t argsLen);
 
 static const dev_wifi_command_S dev_wifi_commands[] = {
     {
@@ -45,21 +45,21 @@ hal_error_E dev_wifi_microSpecific_init(void) {
     return dev_wifi_init(&dev_wifi_config);
 }
 
-static hal_error_E dev_wifi_command_setTime(char **arg, uint32_t args) {
+static hal_error_E dev_wifi_command_setTime(uint8_t *args, uint8_t argsLen) {
     // Format is: Y M D hh:mm:ss
     // Could do the processing on the ESP and have it send over the formatted timeStamp
 
-    if (args > DEV_WIFI_TIME_ARGS_COUNT) {
+    if (argsLen > DEV_WIFI_TIME_ARGS_COUNT) {
         return HAL_ERROR_ERR;
     }
 
     hal_rtc_time_S timeToSet = {
-        .year = arg[DEV_WIFI_TIME_ARGS_YEAR],
-        .month = arg[DEV_WIFI_TIME_ARGS_MONTH],
-        .day = arg[DEV_WIFI_TIME_ARGS_DAY],
-        .hour = arg[DEV_WIFI_TIME_ARGS_HOUR],
-        .minute = arg[DEV_WIFI_TIME_ARGS_MINUTE],
-        .seconds = arg[DEV_WIFI_TIME_ARGS_SECONDS]
+        .year = args[DEV_WIFI_TIME_ARGS_YEAR],
+        .month = args[DEV_WIFI_TIME_ARGS_MONTH],
+        .day = args[DEV_WIFI_TIME_ARGS_DAY],
+        .hour = args[DEV_WIFI_TIME_ARGS_HOUR],
+        .minute = args[DEV_WIFI_TIME_ARGS_MINUTE],
+        .seconds = args[DEV_WIFI_TIME_ARGS_SECONDS]
     };
 
     hal_rtc_setTime(&timeToSet);
@@ -67,14 +67,14 @@ static hal_error_E dev_wifi_command_setTime(char **arg, uint32_t args) {
     return HAL_ERROR_OK;
 }
 
-static hal_error_E dev_wifi_command_setAlarm(char **arg, uint32_t args) {
+static hal_error_E dev_wifi_command_setAlarm(uint8_t *args, uint8_t argsLen) {
 
 }
 
-static hal_error_E dev_wifi_command_getAlarms(char **arg, uint32_t args) {
+static hal_error_E dev_wifi_command_getAlarms(uint8_t *args, uint8_t argsLen) {
 
 }
 
-static hal_error_E dev_wifi_command_removeAlarm(char **arg, uint32_t args) {
+static hal_error_E dev_wifi_command_removeAlarm(uint8_t *args, uint8_t argsLen) {
 
 }

@@ -23,6 +23,8 @@
 #include "hal_rtc.h"
 #include "hal_rtc_microSpecific.h"
 
+#include "dev_wifi.h"
+
 #include "dev_console.h"
 #include "dev_console_microSpecific.h"
 #include "dev_alarm_microSpecific.h"
@@ -41,9 +43,17 @@
 xTaskHandle slowTaskHandle;
 xTaskHandle fastTaskHandle;
 xTaskHandle consoleTaskHandle;
+xTaskHandle ESPTaskHandle;
+
 
 extern volatile char receivedString[DEV_CONSOLE_MAX_COMMAND_LENGTH];
 extern volatile bool receivedStringReady;
+
+extern volatile uint8_t receivedESPCommand[DEV_WIFI_MAX_COMMAND_LENGTH];
+extern volatile bool receivedESPCommandReady;
+
+extern volatile uint8_t receivedByteCount;
+
 static void console_task(void *pvParameters) {
   for (;;) {
     // If we receive this notification, the buffer is ready to be processed
@@ -53,6 +63,19 @@ static void console_task(void *pvParameters) {
       // Clear the ready flag and buffer so the ISR can start picking up new characters
       memset((char *)receivedString, 0U, sizeof(receivedString));
       receivedStringReady = false;
+    }
+  }
+}
+
+static void ESP_task(void *pvParameters) {
+  for(;;) {
+    // If we receive this notification, the buffer is ready to be processed
+    if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) == pdTRUE) {
+      // Notifications mean the buffer is good to go. Process it
+      dev_wifi_processCommandArray((uint8_t *)receivedESPCommand, receivedByteCount);
+      // Clear the ready flag and buffer so the ISR can start picking up new bytes
+      memset((uint8_t *)receivedESPCommand, 0U, sizeof(receivedESPCommand));
+      receivedESPCommandReady = false;
     }
   }
 }
@@ -113,6 +136,7 @@ int main(void) {
 
   // Device layer init
   (void)dev_console_microSpecific_init();
+  (void)dev_wifi_microSpecific_init();
   dev_alarm_microSpecific_init();
 
   interrupts_init();
@@ -122,7 +146,10 @@ int main(void) {
   xTaskCreate(task_100ms, "task_100ms", 32, NULL, tskIDLE_PRIORITY, &slowTaskHandle);
   xTaskCreate(task_10ms, "task_10ms", 32, NULL, tskIDLE_PRIORITY, &fastTaskHandle);
   // Set console task as highest priority so nothing hangs
-  xTaskCreate(console_task, "console", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &consoleTaskHandle);
+  xTaskCreate(console_task, "console", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES - 1, &consoleTaskHandle);
+
+  // Set ESP task to second highest priority
+  xTaskCreate(ESP_task, "ESP", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES - 2, &ESPTaskHandle);
 
   vTaskStartScheduler();
 
