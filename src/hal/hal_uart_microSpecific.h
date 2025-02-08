@@ -8,6 +8,7 @@ extern "C" {
 
 typedef enum {
     HAL_UART_CHANNEL_COM_PORT,
+    HAL_UART_CHANNEL_ESP_PORT,
     HAL_UART_CHANNEL_COUNT,
 } hal_uart_channel_E;
 
