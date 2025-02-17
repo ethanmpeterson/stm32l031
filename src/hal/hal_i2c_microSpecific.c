@@ -47,10 +47,10 @@ hal_error_E hal_i2c_microSpecific_initI2CChannel1(void) {
     //This is to configure it in master mode
 
     //clear PE bit
-    I2C1->CR1 &= ~(1 << I2C_CR1_PE_Pos);
+    I2C1->CR1 &= (uint32_t)~(1 << I2C_CR1_PE_Pos);
 
     //Enable analog filter
-    I2C1->CR1 &= ~(1 << I2C_CR1_ANFOFF_Pos);
+    I2C1->CR1 &= (uint32_t)~(1 << I2C_CR1_ANFOFF_Pos);
 
     //Disable digital filter
     I2C1->CR1 &= ~I2C_CR1_DNF_Msk;
@@ -72,7 +72,7 @@ hal_error_E hal_i2c_microSpecific_initI2CChannel1(void) {
     I2C1->CR2 &= ~I2C_CR2_AUTOEND_Msk;
 
     //NOSTRETCH must be kept clear in master mode
-    I2C1->CR1 &= ~(1 << I2C_CR1_NOSTRETCH_Pos);
+    I2C1->CR1 &= ~(uint32_t)(1 << I2C_CR1_NOSTRETCH_Pos);
 
     //Enable the peripheral
     I2C1->CR1 |= (1 << I2C_CR1_PE_Pos);
@@ -83,10 +83,12 @@ hal_error_E hal_i2c_microSpecific_initI2CChannel1(void) {
 //Not necessary to keep
 hal_error_E hal_i2c_microSpecific_sendChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes) {
 
+    hal_error_E ret = HAL_ERROR_OK;
+
     uint16_t addressWidthMsk = 0xFC00;
 
     if (addressWidthMsk & address) {
-        //Return error
+        return HAL_ERROR_ERR;
     }
 
     //Clear the address bits
@@ -110,15 +112,19 @@ hal_error_E hal_i2c_microSpecific_sendChannel1Data(uint16_t address, uint8_t* da
         I2C1->TXDR = *data;
         data++;
     }
+
+    return ret;
 }
 
 //Not necessary to keep
 hal_error_E hal_i2c_microSpecific_receiveI2CChannel1Data(uint16_t address, uint8_t* data, uint8_t nBytes) {
     
+    hal_error_E ret = HAL_ERROR_OK;
+
     uint16_t addressWidthMsk = 0xFC00;
 
     if (addressWidthMsk & address) {
-        //Return error
+        return HAL_ERROR_ERR;
     }
 
     //Clear the address bits
@@ -139,26 +145,33 @@ hal_error_E hal_i2c_microSpecific_receiveI2CChannel1Data(uint16_t address, uint8
 
         data++;
     }
+
+    return ret;
 }
 
 //Unnecessary for now, may use in the future
 hal_error_E hal_i2c_microSpecific_Channel1_IRQHandler(void) {
-
+    return HAL_ERROR_OK;
 }
 
 hal_error_E hal_i2c_microSpecific_Channel1_receiveNextByte(uint8_t *receivedByte) {
-    *receivedByte = I2C1->RXDR;
+    *receivedByte = (uint8_t)I2C1->RXDR;
+    return HAL_ERROR_OK;
 }
 
 hal_error_E hal_i2c_microSpecific_Channel1_sendNextByte(uint8_t byteToSend) {
     I2C1->TXDR = byteToSend;
+    return HAL_ERROR_OK;
 }
 
 hal_error_E hal_i2c_microSpecific_Channel1_beginSend(uint16_t address, uint8_t nBytes) {
+
+    hal_error_E ret = HAL_ERROR_OK;
+
     uint16_t addressWidthMsk = 0xFC00;
 
     if (addressWidthMsk & address) {
-        //Return error
+        return HAL_ERROR_ERR;
     }
 
     //Clear the address bits
@@ -173,14 +186,18 @@ hal_error_E hal_i2c_microSpecific_Channel1_beginSend(uint16_t address, uint8_t n
     //Start
     I2C1->CR2 &= I2C_CR2_START_Msk;
 
+    return ret;
 
 }
 
 hal_error_E hal_i2c_microSpecific_Channel1_beginReceive(uint16_t address, uint8_t nBytes) {
+
+    hal_error_E ret = HAL_ERROR_OK;
+
     uint16_t addressWidthMsk = 0xFC00;
 
     if (addressWidthMsk & address) {
-        //Return error
+        return HAL_ERROR_ERR;
     }
 
     //Clear the address bits
@@ -194,8 +211,12 @@ hal_error_E hal_i2c_microSpecific_Channel1_beginReceive(uint16_t address, uint8_
 
     //Start
     I2C1->CR2 &= I2C_CR2_START_Msk;
+
+    return ret;
+
 }
 
 hal_error_E hal_i2c_microSpecific_Channel1_endTransmission(void) {
     I2C1->CR2 &= I2C_CR2_STOP_Msk;
+    return HAL_ERROR_OK;
 }

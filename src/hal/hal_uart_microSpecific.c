@@ -76,7 +76,7 @@ static hal_error_E hal_uart_microSpecific_receiveComPortByte(uint8_t *data) {
   hal_error_E ret = HAL_ERROR_OK;
 
   if ((USART2->ISR & USART_ISR_RXNE) == USART_ISR_RXNE) {
-    *data = USART2->RDR;
+    *data = (uint8_t)USART2->RDR;
   } else {
     ret = HAL_ERROR_ERR;
   }
